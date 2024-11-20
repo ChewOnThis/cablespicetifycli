@@ -1,5 +1,8 @@
 # Chewy's Spotify Shortcut System Guide
 
+This is all for 2 shortcuts mind you; Adding and deleting songs to and from a playlist.
+
+
 This guide provides a detailed explanation of how the three main components — the **Server**, the **Auth Token Manager**, and the **Shortcut Script** — work together. It also includes installation steps, dependencies, usage instructions, and how to run the system.
 This shit took me like 10 full hours of fucking with and ik I'm new but I'm proud brev lemme have it. Updates for UI shit will come probably, lazy atm.
 
