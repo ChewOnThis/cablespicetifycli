@@ -27,4 +27,4 @@ async function exchangeAuthCode(authCode) {
 }
 
 // Replace with your actual authorization code
-exchangeAuthCode("PUT YO AUTH CODE HERE");
+exchangeAuthCode("PUT YO AUTH CODE HERE CUH");

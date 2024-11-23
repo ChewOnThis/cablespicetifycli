@@ -25,7 +25,8 @@
         setTimeout(KeyboardShortcut, 1000); // Retry after 1 second
         return;
     }
-
+	console.log("Custom Shortcuts Loaded NICE LAD!!!");
+console.log("undo/redo functionality loaded!");
     const NODE_SERVER_URL = "http://localhost:3000"; // Base URL of your Node.js server
     let accessToken = null;
 
@@ -124,82 +125,182 @@
         }
     }
 
-    // Add Current Track to "MAIN" Playlist
-    async function addCurrentTrackToMainPlaylist() {
+	const actionHistory = []; // Stores actions that can be undone
+	const redoStack = []; // Stores actions that can be redone
+	
+	function performAction(action) {
+		// Clear the redo stack whenever a new action is performed
+		redoStack.length = 0;
+	
+		// Push the action to the history
+		actionHistory.push(action);
+	
+		// Execute the action
+		if (typeof action.do === "function") {
+			try {
+				action.do();
+			} catch (error) {
+				console.error("Failed to perform action:", error);
+			}
+		}
+	}
+	
+	async function addCurrentTrackToMainPlaylist() {
 		console.log("addCurrentTrackToMainPlaylist ACTIVATED");
-        const playlistId = await locateMainPlaylist();
-        if (!playlistId) return;
-
-        const currentTrack = Spicetify.Player?.data?.item || Spicetify.Player.getTrack();
-        if (!currentTrack) {
-            console.warn("No track is currently playing.");
-            return;
-        }
-
-        const endpoint = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
-        const token = await getAccessToken();
-
-        try {
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ uris: [currentTrack.uri] }),
-            });
-
-            if (!response.ok) {
-                console.error("Error adding track.");
-                return;
-            }
-
-            const data = await response.json();
-            console.log("Track added successfully to 'MAIN'. Snapshot ID:", data.snapshot_id);
-        } catch (error) {
-            console.error("Failed to add track to 'MAIN':", error);
-        }
-    }
-
-    // Remove Current Track from Current Playlist
-    async function removeCurrentTrackFromCurrentPlaylist() {
+		const playlistId = await locateMainPlaylist();
+		if (!playlistId) return;
+	
+		const currentTrack = Spicetify.Player?.data?.item || Spicetify.Player.getTrack();
+		if (!currentTrack) {
+			console.warn("No track is currently playing.");
+			Spicetify.showNotification("No track is loaded.");
+			return;
+		}
+	
+		const endpoint = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+		const token = await getAccessToken();
+	
+		const action = {
+			do: async () => {
+				try {
+					const response = await fetch(endpoint, {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ uris: [currentTrack.uri] }),
+					});
+	
+					if (!response.ok) {
+						throw new Error("Error adding track to MAIN playlist.");
+					}
+	
+					const data = await response.json();
+					console.log("Track added successfully to 'MAIN'. Snapshot ID:", data.snapshot_id);
+					Spicetify.showNotification("Track added to MAIN playlist.");
+				} catch (error) {
+					console.error("Failed to add track to 'MAIN':", error);
+				}
+			},
+			undo: async () => {
+				try {
+					const response = await fetch(endpoint, {
+						method: "DELETE",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ tracks: [{ uri: currentTrack.uri }] }),
+					});
+	
+					if (!response.ok) {
+						throw new Error("Error removing track from MAIN playlist.");
+					}
+	
+					const data = await response.json();
+					console.log("Track removed successfully from 'MAIN'. Snapshot ID:", data.snapshot_id);
+					Spicetify.showNotification("Track removed from MAIN playlist.");
+				} catch (error) {
+					console.error("Failed to remove track from 'MAIN':", error);
+				}
+			},
+		};
+	
+		performAction(action);
+	}
+	
+	async function removeCurrentTrackFromCurrentPlaylist() {
 		console.log("removeCurrentTrackFromCurrentPlaylist ACTIVATED");
-        const currentPlaylistUri = Spicetify.Player?.data?.context?.uri;
-        const currentTrack = Spicetify.Player?.data?.item || Spicetify.Player.getTrack();
-        if (!currentPlaylistUri || !currentTrack) {
-            console.warn("No track or playlist context found.");
-            return;
-        }
-
-        const playlistId = currentPlaylistUri.split(":").pop();
-        const endpoint = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
-        const token = await getAccessToken();
-
-        try {
-            const response = await fetch(endpoint, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ tracks: [{ uri: currentTrack.uri }] }),
-            });
-
-            if (!response.ok) {
-                console.error("Error removing track from playlist.");
-                return;
-            }
-
-            const data = await response.json();
-            console.log("Track removed successfully from current playlist. Snapshot ID:", data.snapshot_id);
-        } catch (error) {
-            console.error("Failed to remove track from current playlist:", error);
-        }
-    }
-
-    // Bind Shortcuts
-    Spicetify.Mousetrap.bind("ctrl+1", addCurrentTrackToMainPlaylist); // Add to MAIN
-    Spicetify.Mousetrap.bind("ctrl+`", removeCurrentTrackFromCurrentPlaylist); // Remove from current playlist
+		const currentPlaylistUri = Spicetify.Player?.data?.context?.uri;
+		const currentTrack = Spicetify.Player?.data?.item || Spicetify.Player.getTrack();
+		if (!currentPlaylistUri || !currentTrack) {
+			console.warn("No track or playlist context found.");
+			Spicetify.showNotification("No track is loaded.");
+			return;
+		}
+	
+		const playlistId = currentPlaylistUri.split(":").pop();
+		const endpoint = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+		const token = await getAccessToken();
+	
+		const action = {
+			do: async () => {
+				try {
+					const response = await fetch(endpoint, {
+						method: "DELETE",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ tracks: [{ uri: currentTrack.uri }] }),
+					});
+	
+					if (!response.ok) {
+						throw new Error("Error removing track from current playlist.");
+					}
+	
+					const data = await response.json();
+					console.log("Track removed successfully from current playlist. Snapshot ID:", data.snapshot_id);
+					Spicetify.showNotification("Track removed from current playlist.");
+				} catch (error) {
+					console.error("Failed to remove track from current playlist:", error);
+				}
+			},
+			undo: async () => {
+				try {
+					const response = await fetch(endpoint, {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ uris: [currentTrack.uri] }),
+					});
+	
+					if (!response.ok) {
+						throw new Error("Error re-adding track to current playlist.");
+					}
+	
+					const data = await response.json();
+					console.log("Track re-added successfully to current playlist. Snapshot ID:", data.snapshot_id);
+					Spicetify.showNotification("Track re-added to current playlist.");
+				} catch (error) {
+					console.error("Failed to re-add track to current playlist:", error);
+				}
+			},
+		};
+	
+		performAction(action);
+	}
+	
+	// Undo and Redo Functions
+	function undoLastAction() {
+		const lastAction = actionHistory.pop();
+		if (lastAction && typeof lastAction.undo === "function") {
+			redoStack.push(lastAction); // Add to redo stack
+			lastAction.undo();
+		} else {
+			Spicetify.showNotification("No actions to undo.");
+		}
+	}
+	
+	function redoLastAction() {
+		const lastUndone = redoStack.pop();
+		if (lastUndone && typeof lastUndone.do === "function") {
+			actionHistory.push(lastUndone); // Add back to history
+			lastUndone.do();
+		} else {
+			Spicetify.showNotification("No actions to redo.");
+		}
+	}
+	
+	// Bind Shortcuts
+	Spicetify.Mousetrap.bind("ctrl+1", addCurrentTrackToMainPlaylist); // Add to MAIN
+	Spicetify.Mousetrap.bind("ctrl+`", removeCurrentTrackFromCurrentPlaylist); // Remove from current playlist
+	Spicetify.Mousetrap.bind("ctrl+z", undoLastAction); // Undo
+	Spicetify.Mousetrap.bind("ctrl+y", redoLastAction); // Redo
+	
 
     console.log("Custom Shortcuts Loaded!");
 })();
@@ -320,27 +421,16 @@
 
 
 
-// Undo Last Action
-const actionHistory = [];
-function undoLastAction() {
-	const lastAction = actionHistory.pop();
-	if (lastAction && typeof lastAction.undo === "function") {
-		try {
-			lastAction.undo();
-			Spicetify.showNotification("Action undone successfully.");
-		} catch (error) {
-			Spicetify.showNotification("Failed to undo action.");
-		}
-	} else {
-		Spicetify.showNotification("No actions to undo.");
-	}
-}
-	
+
+
+
+
     // Keybinds
     const binds = {
 		"ctrl+`": { callback: removeCurrentTrackFromMainPlaylist },
 		"ctrl+1": { callback: addCurrentTrackToMainPlaylist },
 		"ctrl+z": { callback: undoLastAction }, // Ensure undoLastAction is implemented
+		"ctrl+y": { callback: redoLastAction},
 	
         // Existing keybinds
         "ctrl+q": {

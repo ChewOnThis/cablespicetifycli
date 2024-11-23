@@ -11,7 +11,7 @@
 	}
 
 	const { React: react, ReactDOM: reactDOM } = Spicetify;
-	const { useState, useEffect, useRef } = react;
+	const { useState, useEffect } = react;
 
 	const CONFIG = getConfig();
 	let updateVisual;
@@ -90,47 +90,27 @@
     border: 0;
     color: #fff;
     padding: 0 5px;
-    cursor: pointer;
 }
 #fad-progress-container {
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-grow: 1;
-    gap: 10px;
 }
 #fad-progress {
     width: 100%;
     height: 6px;
     border-radius: 6px;
     background-color: #ffffff50;
-    flex-grow: 1;
-    min-width: 150px;
-}
-#fad-progress:hover #fad-progress-inner {
-    background-color: var(--spice-button);
-}
-#fad-progress:hover #fad-thumb {
-    visibility: visible;
+    overflow: hidden;
 }
 #fad-progress-inner {
-    width: var(--progress-width);
     height: 100%;
     border-radius: 6px;
     background-color: #ffffff;
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.8);
-	position: relative;
 }
-#fad-thumb {
-    position: absolute;
-    top: -3px;
-    right: -6px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #ffffff;
-    cursor: pointer;
-    visibility: hidden;
+#fad-duration {
+    margin-left: 10px;
 }
 #fad-background {
     position: absolute;
@@ -154,13 +134,6 @@ body.video-full-screen.video-full-screen--hide-ui {
     border: 0;
     color: currentColor;
     padding: 0 5px;
-    cursor: pointer;
-}
-#fad-controls button svg {
-    vertical-align: middle;
-}
-#fad-elapsed, #fad-duration {
-    font-variant-numeric: tabular-nums;
 }
 #fad-artist svg, #fad-album svg, #fad-release-date svg {
     display: inline-block;
@@ -200,16 +173,19 @@ body.video-full-screen.video-full-screen--hide-ui {
 }
 #fad-status {
     display: flex;
+    min-width: 400px;
+    max-width: 400px;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
 }
 #fad-status.active {
     margin-top: 20px;
 }
 #fad-controls {
     display: flex;
-    margin: 0 auto;
+    margin-right: 10px;
+}
+#fad-elapsed {
+    min-width: 52px;
 }`,
 		`
 #fad-art {
@@ -253,8 +229,10 @@ body.video-full-screen.video-full-screen--hide-ui {
     margin-top: 20px;
     order: 2
 }
-#fad-progress-container {
-    width: 100%;
+#fad-elapsed {
+    min-width: 56px;
+    margin-right: 10px;
+    text-align: right;
 }`,
 	];
 
@@ -279,6 +257,7 @@ body.video-full-screen.video-full-screen--hide-ui {
 }
 #fad-art {
     max-width: 210px;
+    margin-left: 50px;
 }`,
 		"",
 	];
@@ -318,99 +297,26 @@ body.video-full-screen.video-full-screen--hide-ui {
 	};
 
 	const ProgressBar = () => {
-		const [progress, setProgress] = useState(Spicetify.Player.getProgress());
-		const duration = Spicetify.Platform.PlayerAPI._state.duration;
-
-		const progressDivRef = useRef(null);
-		const [isDragging, setIsDragging] = useState(false);
-
+		const [value, setValue] = useState(Spicetify.Player.getProgress());
 		useEffect(() => {
-			if (isDragging) {
-				return;
-			}
-
-			const update = ({ data }) => setProgress(data);
+			const update = ({ data }) => setValue(data);
 			Spicetify.Player.addEventListener("onprogress", update);
 			return () => Spicetify.Player.removeEventListener("onprogress", update);
-		}, [isDragging]);
-
-		// Handle click on progress bar to set progress
-		const handleClick = (e) => {
-			const container = progressDivRef.current;
-			if (isDragging || !container) {
-				return;
-			}
-
-			const containerRect = container.getBoundingClientRect();
-			const clickX = e.clientX - containerRect.left;
-			const newProgress = (clickX / containerRect.width) * duration;
-			Spicetify.Player.seek(newProgress);
-			setProgress(newProgress);
-		};
-
-		// Handle dragging functionality
-		const handleMouseDown = () => setIsDragging(true);
-		const handleMouseMove = (e) => {
-			const container = progressDivRef.current;
-			if (!isDragging || !container) {
-				return;
-			}
-
-			const containerRect = container.getBoundingClientRect();
-			const offsetX = e.clientX - containerRect.left;
-			const newProgress = (offsetX / containerRect.width) * duration;
-			setProgress(newProgress);
-		};
-		const handleMouseUp = () => {
-			if (!isDragging) {
-				return;
-			}
-
-			Spicetify.Player.seek(progress);
-			setIsDragging(false);
-		};
-
-		// Attach mousemove and mouseup listeners when dragging starts
-		useEffect(() => {
-			if (isDragging) {
-				window.addEventListener("mousemove", handleMouseMove);
-				window.addEventListener("mouseup", handleMouseUp);
-			} else {
-				window.removeEventListener("mousemove", handleMouseMove);
-				window.removeEventListener("mouseup", handleMouseUp);
-			}
-
-			return () => {
-				window.removeEventListener("mousemove", handleMouseMove);
-				window.removeEventListener("mouseup", handleMouseUp);
-			};
-		}, [isDragging]);
-
-		// Calculate the thumb position
-		const thumbPosition = (progress / duration) * 100;
-
+		});
+		const duration = Spicetify.Platform.PlayerAPI._state.duration;
 		return react.createElement(
 			"div",
 			{ id: "fad-progress-container" },
-			react.createElement("span", { id: "fad-elapsed" }, Spicetify.Player.formatTime(progress)),
+			react.createElement("span", { id: "fad-elapsed" }, Spicetify.Player.formatTime(value)),
 			react.createElement(
 				"div",
-				{
-					id: "fad-progress",
-					ref: progressDivRef,
-					onClick: handleClick,
+				{ id: "fad-progress" },
+				react.createElement("div", {
+					id: "fad-progress-inner",
 					style: {
-						"--progress-width": `${thumbPosition}%`,
+						width: `${(value / duration) * 100}%`,
 					},
-				},
-				react.createElement(
-					"div",
-					{ id: "fad-progress-inner" },
-					react.createElement("div", {
-						id: "fad-thumb",
-						onMouseDown: handleMouseDown,
-					})
-				)
+				})
 			),
 			react.createElement("span", { id: "fad-duration" }, Spicetify.Player.formatTime(duration))
 		);
@@ -515,7 +421,6 @@ body.video-full-screen.video-full-screen--hide-ui {
 					artist: artistName || "",
 					album: albumText || "",
 					releaseDate: releaseDate || "",
-					heart: Spicetify.Player.getHeart(),
 				});
 				return;
 			}
@@ -534,7 +439,6 @@ body.video-full-screen.video-full-screen--hide-ui {
 					album: albumText || "",
 					releaseDate: releaseDate || "",
 					cover: bgImage,
-					heart: Spicetify.Player.getHeart(),
 				});
 			};
 			this.currTrackImg.onerror = () => {

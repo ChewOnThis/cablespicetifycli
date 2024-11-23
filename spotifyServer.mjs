@@ -8,8 +8,8 @@ app.use(cors()); // Add this before defining routes
 
 
 
-const CLIENT_ID = "PUT YO CLIENT ID HERE SON";
-const CLIENT_SECRET = "PUT YO CLIENT SECRET HERE";
+const CLIENT_ID = "PUT YO CLIENT ID HERE: https://developer.spotify.com/dashboard";
+const CLIENT_SECRET = "PUT YO CLIENT SECRET HERE https://developer.spotify.com/dashboard";
 const REDIRECT_URI = "http://localhost:3000/callback"; // Update this to match your setup
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 
