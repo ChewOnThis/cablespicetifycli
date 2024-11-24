@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spicetify/cli/src/apply"
 	backupstatus "github.com/spicetify/cli/src/status/backup"
@@ -13,9 +15,11 @@ import (
 	"github.com/spicetify/cli/src/utils"
 )
 
-// Apply .
 func Apply(spicetifyVersion string) {
 	utils.MigrateConfigFolder()
+
+	// Start Spotify server on localhost
+	startServer()
 
 	backupSpicetifyVersion := backupSection.Key("with").MustString("")
 	if spicetifyVersion != backupSpicetifyVersion {
@@ -23,10 +27,6 @@ func Apply(spicetifyVersion string) {
 		os.Exit(1)
 	}
 
-	// Copy raw assets to Spotify Apps folder if Spotify is never applied
-	// before.
-	// extractedStock is for preventing copy raw assets 2 times when
-	// replaceColors is false.
 	extractedStock := false
 	if !spotifystatus.Get(appDestPath).IsApplied() {
 		utils.PrintBold(`Copying raw assets:`)
@@ -101,6 +101,7 @@ func Apply(spicetifyVersion string) {
 
 	utils.PrintSuccess("Spotify is spiced up!")
 }
+
 
 // RefreshTheme updates user.css + theme.js and overwrites custom assets
 func RefreshTheme() {
@@ -222,54 +223,78 @@ func refreshThemeJS() {
 }
 
 func pushExtensions(destExt string, list ...string) {
-	var err error
-	var dest string
-	if len(destExt) > 0 {
-		dest = filepath.Join(appDestPath, "xpui", "extensions", destExt)
-	} else {
-		dest = filepath.Join(appDestPath, "xpui", "extensions")
-	}
+    var err error
+    var dest string
 
-	for _, v := range list {
-		var extName, extPath string
+    // Determine destination folder
+    if len(destExt) > 0 {
+        dest = filepath.Join(appDestPath, "xpui", "extensions", destExt)
+    } else {
+        dest = filepath.Join(appDestPath, "xpui", "extensions")
+    }
 
-		if filepath.IsAbs(v) {
-			extName = filepath.Base(v)
-			extPath = v
-		} else {
-			extName = v
-			if !strings.Contains(extName, ".js") && !strings.Contains(extName, ".mjs") {
-				extName += ".js"
-			}
-			extPath, err = utils.GetExtensionPath(extName)
-			if err != nil {
-				utils.PrintError(`Extension "` + extName + `" not found.`)
-				continue
-			}
-		}
+    // Check if destination exists or create it
+    if _, err := os.Stat(dest); os.IsNotExist(err) {
+        err := os.MkdirAll(dest, os.ModePerm)
+        if err != nil {
+            utils.PrintError(fmt.Sprintf("Failed to create destination directory: %s", err.Error()))
+            return
+        }
+    }
 
-		if err = utils.CopyFile(extPath, dest); err != nil {
-			utils.PrintError(err.Error())
-			continue
-		}
+    // Process each extension in the list
+    for _, v := range list {
+        var extName, extPath string
 
-		if strings.HasSuffix(extName, ".mjs") {
-			utils.ModifyFile(filepath.Join(dest, extName), func(content string) string {
-				lines := strings.Split(content, "\n")
-				for i := 0; i < len(lines); i++ {
-					mapping := utils.FindSymbol("", lines[i], []string{
-						`//\s*spicetify_map\{(.+?)\}\{(.+?)\}`,
-					})
-					if len(mapping) > 0 {
-						lines[i+1] = strings.Replace(lines[i+1], mapping[0], mapping[1], 1)
-					}
-				}
+        // Validate extensions
+        extName = filepath.Base(v)
+        if !(strings.HasSuffix(extName, ".js") || strings.HasSuffix(extName, ".mjs")) {
+            utils.PrintWarning(fmt.Sprintf("Skipping unsupported file: %s", extName))
+            continue
+        }
 
-				return strings.Join(lines, "\n")
-			})
-		}
-	}
+        // Get absolute path or locate extension
+        if filepath.IsAbs(v) {
+            extPath = v
+        } else {
+            if !strings.Contains(extName, ".js") && !strings.Contains(extName, ".mjs") {
+                extName += ".js"
+            }
+            extPath, err = utils.GetExtensionPath(extName)
+            if err != nil {
+                utils.PrintError(fmt.Sprintf("Extension '%s' not found: %s", extName, err.Error()))
+                continue
+            }
+        }
+
+        // Copy the extension file to the destination
+        if err = utils.CopyFile(extPath, dest); err != nil {
+            utils.PrintError(fmt.Sprintf("Failed to copy file '%s': %s", extName, err.Error()))
+            continue
+        }
+
+        // Modify content if the extension is a .mjs file
+        if strings.HasSuffix(extName, ".mjs") {
+            utils.ModifyFile(filepath.Join(dest, extName), func(content string) string {
+                lines := strings.Split(content, "\n")
+                for i := 0; i < len(lines); i++ {
+                    mapping := utils.FindSymbol("", lines[i], []string{
+                        `//\s*spicetify_map\{(.+?)\}\{(.+?)\}`,
+                    })
+                    if len(mapping) > 0 {
+                        lines[i+1] = strings.Replace(lines[i+1], mapping[0], mapping[1], 1)
+                    }
+                }
+                return strings.Join(lines, "\n")
+            })
+        }
+    }
 }
+
+
+
+
+
 
 func RefreshApps(list ...string) {
 	if len(list) == 0 {

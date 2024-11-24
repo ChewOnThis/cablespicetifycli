@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Configuration</title>
+</head>
+<body>
+    <h1>Configure Spotify</h1>
+    <form id="configForm">
+        <label for="clientId">Client ID:</label><br>
+        <input type="text" id="clientId" name="clientId" required><br><br>
+
+        <label for="clientSecret">Client Secret:</label><br>
+        <input type="text" id="clientSecret" name="clientSecret" required><br><br>
+
+        <label for="authCode">Auth Code:</label><br>
+        <input type="text" id="authCode" name="authCode" required><br><br>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('configForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                clientId: form.clientId.value,
+                clientSecret: form.clientSecret.value,
+                authCode: form.authCode.value,
+            };
+
+            const response = await fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        });
+    </script>
+</body>
+</html>
