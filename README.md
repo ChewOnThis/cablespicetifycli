@@ -13,6 +13,10 @@ Welcome to **CablespicetifyCLI**! This tool allows you to customize your Spotify
 ### Requirements
 - **Node.js**: Please make sure you have Node.js installed on your system. If not, download it from [Node.js official website](https://nodejs.org/).
 - **Spotify Desktop Client**: CablespicetifyCLI works with the Spotify desktop application, so make sure it is installed.
+- **Spicetify**: Install Spicetify by running the following command in **PowerShell**:
+  ```powershell
+  iwr -useb https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.ps1 | iex
+  ```
 
 ### One-Line Installation Command
 To install CablespicetifyCLI, run the following command in **PowerShell** (make sure **PowerShell is not run as Administrator**):
@@ -32,6 +36,14 @@ This command will:
 - Extracts the contents into your local user directory (`C:\Users\<Your Username>\AppData\Local\cablespicetifycli`).
 - Installs Spicetify and copies custom extensions and applications.
 - Starts a local server at `http://localhost:3000` for managing advanced Spotify interactions.
+
+### Getting Your Spotify Developer Details
+To use CablespicetifyCLI, you need to set up a Spotify Developer application to obtain your **Client ID** and **Client Secret**. Follow these steps:
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Log in with your Spotify account.
+3. Click **Create an App**.
+4. Fill in the details for your app (e.g., name, description) and click **Create**.
+5. Once the app is created, you will see the **Client ID** and **Client Secret**. Note these down as they will be needed during the installation.
 
 ### Post-Installation
 After installation, Spotify will restart, and all customizations will be applied. You will also be prompted to install **Spicetify Marketplace**, which gives you access to themes, extensions, and other community-created customizations.
@@ -67,10 +79,9 @@ To remove all customizations and uninstall CablespicetifyCLI:
    spicetify restore
    ```
 2. Delete the **CablespicetifyCLI** installation folder located at:
-```
-C:\Users\<Your Username>\AppData\Local\cablespicetifycli
-
-```
+   ```
+   C:\Users\<Your Username>\AppData\Local\cablespicetifycli
+   ```
 
 ## Troubleshooting
 
@@ -91,6 +102,7 @@ Contributions are welcome! Feel free to open pull requests or submit issues to i
 ### Stay Connected
 - [GitHub Repository](https://github.com/ChewOnThis/cablespicetifycli)
 - Stay tuned for updates and new features!
+
 
 
 
