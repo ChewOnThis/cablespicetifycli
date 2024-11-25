@@ -3,7 +3,7 @@
 Welcome to **CablespicetifyCLI**! This tool allows you to customize your Spotify experience using Spicetify, along with a set of custom extensions and applications that enhance the functionality of your Spotify desktop client.
 
 ## Features
-- **Spotify Customizations**: Modify the look and feel of Spotify with themes, extensions, and custom applications.
+- **Spotify Customisations**: Modify the look and feel of Spotify with themes, extensions, and custom applications.
 - **Node.js Server Integration**: Manage Spotify token authorization and custom actions using a local server.
 - **Easy Keyboard Shortcuts**: Control and interact with Spotify effortlessly.
 - **Spicetify Marketplace**: Access themes, extensions, and more from Spicetify's Marketplace.
