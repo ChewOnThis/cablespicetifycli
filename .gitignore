@@ -17,3 +17,5 @@ package.json
 install.log
 
 pnpm-lock.yaml
+
+tokens.json
